@@ -4,6 +4,11 @@ import com.findit.model.Role;
 import com.findit.model.User;
 import com.findit.repository.UserRepository;
 import com.findit.service.UserService;
+import com.findit.model.LostItem;
+import com.findit.model.FoundItem;
+import com.findit.repository.ItemRepository;
+import com.findit.service.ItemService;
+import com.findit.ui.ItemMenu;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -109,6 +114,16 @@ public class App {
         try {
             userService.updatePhone(loggedInUser, phone);
             System.out.println("Phone updated.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Update failed: " + e.getMessage());
+        }
+    }
+    private static void changeEmail() {
+        System.out.print("New email: ");
+        String email = scanner.nextLine();
+        try {
+            userService.changeEmail(loggedInUser, email);
+            System.out.println("Email updated.");
         } catch (IllegalArgumentException e) {
             System.out.println("Update failed: " + e.getMessage());
         }
