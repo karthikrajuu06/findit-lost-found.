@@ -6,6 +6,7 @@ import com.findit.util.Validator;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 
 public class ItemService {
 
@@ -58,6 +59,16 @@ public class ItemService {
 
     public List<FoundItem> getMyFound(User user) {
         return foundRepo.findByUser(user.getId());
+    }
+
+    // ---------- Lookups used by ClaimService ----------
+
+    public Optional<FoundItem> findFoundById(int id) {
+        return foundRepo.findById(id);
+    }
+
+    public List<FoundItem> getAllFound() {
+        return foundRepo.findAll();
     }
 
     // ---------- Update / delete ----------

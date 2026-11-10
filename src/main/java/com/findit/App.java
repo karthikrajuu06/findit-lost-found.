@@ -4,10 +4,13 @@ import com.findit.model.FoundItem;
 import com.findit.model.LostItem;
 import com.findit.model.Role;
 import com.findit.model.User;
+import com.findit.repository.ClaimRepository;
 import com.findit.repository.ItemRepository;
 import com.findit.repository.UserRepository;
+import com.findit.service.ClaimService;
 import com.findit.service.ItemService;
 import com.findit.service.UserService;
+import com.findit.ui.ClaimMenu;
 import com.findit.ui.ItemMenu;
 import java.util.Optional;
 import java.util.Scanner;
@@ -17,8 +20,11 @@ public class App {
     private static final Scanner scanner = new Scanner(System.in);
     private static final UserService userService =
             new UserService(new UserRepository());
-    private static final ItemMenu itemMenu = new ItemMenu(scanner,
-            new ItemService(new ItemRepository<LostItem>(), new ItemRepository<FoundItem>()));
+    private static final ItemService itemService =
+            new ItemService(new ItemRepository<LostItem>(), new ItemRepository<FoundItem>());
+    private static final ItemMenu itemMenu = new ItemMenu(scanner, itemService);
+    private static final ClaimMenu claimMenu =
+            new ClaimMenu(scanner, new ClaimService(new ClaimRepository(), itemService));
     private static User loggedInUser = null;
 
     public static void main(String[] args) {
@@ -87,8 +93,9 @@ public class App {
         System.out.println("2. Update phone");
         System.out.println("3. Change email");
         System.out.println("4. Lost & Found items");
+        System.out.println("5. Claims");
         if (loggedInUser.getRole() == Role.ADMIN) {
-            System.out.println("5. View all users (Admin)");
+            System.out.println("6. View all users (Admin)");
         }
         System.out.println("0. Logout");
         System.out.print("Choose: ");
@@ -99,7 +106,8 @@ public class App {
             case "2" -> updatePhone();
             case "3" -> changeEmail();
             case "4" -> itemMenu.show(loggedInUser);
-            case "5" -> {
+            case "5" -> claimMenu.show(loggedInUser);
+            case "6" -> {
                 if (loggedInUser.getRole() == Role.ADMIN) {
                     userService.getAllUsers().forEach(System.out::println);
                 } else {
