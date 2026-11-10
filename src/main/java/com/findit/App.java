@@ -1,13 +1,13 @@
 package com.findit;
 
+import com.findit.model.FoundItem;
+import com.findit.model.LostItem;
 import com.findit.model.Role;
 import com.findit.model.User;
-import com.findit.repository.UserRepository;
-import com.findit.service.UserService;
-import com.findit.model.LostItem;
-import com.findit.model.FoundItem;
 import com.findit.repository.ItemRepository;
+import com.findit.repository.UserRepository;
 import com.findit.service.ItemService;
+import com.findit.service.UserService;
 import com.findit.ui.ItemMenu;
 import java.util.Optional;
 import java.util.Scanner;
@@ -17,6 +17,8 @@ public class App {
     private static final Scanner scanner = new Scanner(System.in);
     private static final UserService userService =
             new UserService(new UserRepository());
+    private static final ItemMenu itemMenu = new ItemMenu(scanner,
+            new ItemService(new ItemRepository<LostItem>(), new ItemRepository<FoundItem>()));
     private static User loggedInUser = null;
 
     public static void main(String[] args) {
@@ -83,26 +85,30 @@ public class App {
         System.out.println("\n--- Menu (" + loggedInUser.getRole() + ") ---");
         System.out.println("1. View my profile");
         System.out.println("2. Update phone");
-        System.out.println("3. Logout");
+        System.out.println("3. Change email");
+        System.out.println("4. Lost & Found items");
         if (loggedInUser.getRole() == Role.ADMIN) {
-            System.out.println("4. View all users (Admin)");
+            System.out.println("5. View all users (Admin)");
         }
+        System.out.println("0. Logout");
         System.out.print("Choose: ");
         String choice = scanner.nextLine().trim();
 
         switch (choice) {
             case "1" -> System.out.println(loggedInUser);
             case "2" -> updatePhone();
-            case "3" -> {
-                loggedInUser = null;
-                System.out.println("Logged out.");
-            }
-            case "4" -> {
+            case "3" -> changeEmail();
+            case "4" -> itemMenu.show(loggedInUser);
+            case "5" -> {
                 if (loggedInUser.getRole() == Role.ADMIN) {
                     userService.getAllUsers().forEach(System.out::println);
                 } else {
                     System.out.println("Access denied.");
                 }
+            }
+            case "0" -> {
+                loggedInUser = null;
+                System.out.println("Logged out.");
             }
             default -> System.out.println("Invalid choice.");
         }
@@ -118,6 +124,7 @@ public class App {
             System.out.println("Update failed: " + e.getMessage());
         }
     }
+
     private static void changeEmail() {
         System.out.print("New email: ");
         String email = scanner.nextLine();

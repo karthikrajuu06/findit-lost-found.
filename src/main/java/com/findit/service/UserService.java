@@ -10,8 +10,6 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    
-     
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -61,6 +59,7 @@ public class UserService {
         }
         user.setPhone(newPhone);
     }
+
     public void changeEmail(User user, String newEmail) {
         if (!Validator.isValidEmail(newEmail)) {
             throw new IllegalArgumentException("Invalid email format.");
@@ -71,11 +70,8 @@ public class UserService {
         }
         user.setEmail(newEmail.trim().toLowerCase());
     }
-    
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
-    private static final ItemMenu itemMenu = new ItemMenu(scanner,
-            new ItemService(new ItemRepository<LostItem>(), new ItemRepository<FoundItem>()));
 }
