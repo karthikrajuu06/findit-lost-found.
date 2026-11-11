@@ -10,10 +10,15 @@ public class ClaimService {
 
     private final ClaimRepository claimRepo;
     private final ItemService itemService;
+    private final UserService userService;
+    private final NotificationService notificationService;
 
-    public ClaimService(ClaimRepository claimRepo, ItemService itemService) {
+    public ClaimService(ClaimRepository claimRepo, ItemService itemService,
+                        UserService userService, NotificationService notificationService) {
         this.claimRepo = claimRepo;
         this.itemService = itemService;
+        this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     public Claim submitClaim(User claimant, int foundItemId, String proofDetails) {
@@ -40,6 +45,10 @@ public class ClaimService {
         Claim claim = new Claim(claimRepo.generateId(), foundItemId,
                 claimant.getId(), proofDetails.trim());
         claimRepo.save(claim);
+
+        notificationService.notifyUser(item.getReportedBy(),
+                "New claim #" + claim.getId() + " on your found item '" + item.getName()
+                + "'. Review it in the Claims menu.");
         return claim;
     }
 
@@ -67,10 +76,21 @@ public class ClaimService {
         claim.setStatus(ClaimStatus.APPROVED);
         item.setStatus(ItemStatus.CLAIMED);
 
+        // Contact details are shared ONLY with the approved claimant.
+        String contact = userService.findById(item.getReportedBy())
+                .map(finder -> finder.getName() + ", phone " + finder.getPhone())
+                .orElse("the finder");
+        notificationService.notifyUser(claim.getClaimantId(),
+                "Your claim #" + claim.getId() + " for '" + item.getName()
+                + "' was APPROVED. Contact " + contact + " to collect it.");
+
         for (Claim other : claimRepo.findByFoundItem(item.getId())) {
             if (other.getId() != claim.getId()
                     && other.getStatus() == ClaimStatus.PENDING) {
                 other.setStatus(ClaimStatus.REJECTED);
+                notificationService.notifyUser(other.getClaimantId(),
+                        "Your claim #" + other.getId() + " for '" + item.getName()
+                        + "' was REJECTED because the item was given to another claimant.");
             }
         }
     }
@@ -78,6 +98,11 @@ public class ClaimService {
     public void reject(User reviewer, int claimId) {
         Claim claim = findReviewable(reviewer, claimId);
         claim.setStatus(ClaimStatus.REJECTED);
+
+        String itemName = itemService.findFoundById(claim.getFoundItemId())
+                .map(FoundItem::getName).orElse("the item");
+        notificationService.notifyUser(claim.getClaimantId(),
+                "Your claim #" + claim.getId() + " for '" + itemName + "' was REJECTED.");
     }
 
     public void markReturned(User reviewer, int foundItemId) {
@@ -92,6 +117,13 @@ public class ClaimService {
             throw new IllegalArgumentException("Only a CLAIMED item can be marked returned.");
         }
         item.setStatus(ItemStatus.RETURNED);
+
+        for (Claim c : claimRepo.findByFoundItem(foundItemId)) {
+            if (c.getStatus() == ClaimStatus.APPROVED) {
+                notificationService.notifyUser(c.getClaimantId(),
+                        "'" + item.getName() + "' is now marked as RETURNED. Glad it found its way back!");
+            }
+        }
     }
 
     // ---------- helpers ----------

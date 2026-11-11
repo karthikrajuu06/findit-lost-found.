@@ -5,18 +5,24 @@ import com.findit.repository.ItemRepository;
 import com.findit.util.Validator;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class ItemService {
 
     private final ItemRepository<LostItem> lostRepo;
     private final ItemRepository<FoundItem> foundRepo;
+    private final NotificationService notificationService;
 
     public ItemService(ItemRepository<LostItem> lostRepo,
-                       ItemRepository<FoundItem> foundRepo) {
+                       ItemRepository<FoundItem> foundRepo,
+                       NotificationService notificationService) {
         this.lostRepo = lostRepo;
         this.foundRepo = foundRepo;
+        this.notificationService = notificationService;
     }
 
     // ---------- Report ----------
@@ -29,6 +35,7 @@ public class ItemService {
                 clean(description), location.trim(), parseDate(dateText), clean(imagePath),
                 user.getId());
         lostRepo.save(item);
+        notifyFindersOfMatch(item);
         return item;
     }
 
@@ -40,6 +47,7 @@ public class ItemService {
                 clean(description), location.trim(), parseDate(dateText), clean(imagePath),
                 user.getId());
         foundRepo.save(item);
+        notifyOwnersOfMatch(item);
         return item;
     }
 
@@ -61,7 +69,7 @@ public class ItemService {
         return foundRepo.findByUser(user.getId());
     }
 
-    // ---------- Lookups used by ClaimService ----------
+    // ---------- Lookups used by other services ----------
 
     public Optional<FoundItem> findFoundById(int id) {
         return foundRepo.findById(id);
@@ -69,6 +77,10 @@ public class ItemService {
 
     public List<FoundItem> getAllFound() {
         return foundRepo.findAll();
+    }
+
+    public List<LostItem> getAllLost() {
+        return lostRepo.findAll();
     }
 
     // ---------- Update / delete ----------
@@ -87,6 +99,50 @@ public class ItemService {
 
     public void deleteFound(User user, int id) {
         foundRepo.delete(findAuthorized(foundRepo, user, id));
+    }
+
+    // ---------- Matching ----------
+
+    private void notifyFindersOfMatch(LostItem lost) {
+        for (FoundItem found : foundRepo.findAll()) {
+            if (found.getStatus() == ItemStatus.OPEN
+                    && found.getReportedBy() != lost.getReportedBy()
+                    && isPotentialMatch(lost, found)) {
+                notificationService.notifyUser(found.getReportedBy(),
+                        "A lost item that may match your found '" + found.getName()
+                        + "' was reported (Lost #" + lost.getId() + ": " + lost.getName() + ").");
+            }
+        }
+    }
+
+    private void notifyOwnersOfMatch(FoundItem found) {
+        for (LostItem lost : lostRepo.findAll()) {
+            if (lost.getStatus() == ItemStatus.OPEN
+                    && lost.getReportedBy() != found.getReportedBy()
+                    && isPotentialMatch(lost, found)) {
+                notificationService.notifyUser(lost.getReportedBy(),
+                        "A found item that may match your lost '" + lost.getName()
+                        + "' was reported (Found #" + found.getId() + ": " + found.getName()
+                        + "). Browse found items and submit a claim if it is yours.");
+            }
+        }
+    }
+
+    private boolean isPotentialMatch(Item a, Item b) {
+        if (a.getCategory() != b.getCategory()) {
+            return false;
+        }
+        Set<String> wordsOfA = words(a.getName());
+        for (String word : words(b.getName())) {
+            if (wordsOfA.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<String> words(String text) {
+        return new HashSet<>(Arrays.asList(text.toLowerCase().trim().split("\\s+")));
     }
 
     // ---------- Private helpers ----------

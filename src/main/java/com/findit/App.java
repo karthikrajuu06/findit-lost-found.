@@ -6,25 +6,41 @@ import com.findit.model.Role;
 import com.findit.model.User;
 import com.findit.repository.ClaimRepository;
 import com.findit.repository.ItemRepository;
+import com.findit.repository.NotificationRepository;
 import com.findit.repository.UserRepository;
 import com.findit.service.ClaimService;
 import com.findit.service.ItemService;
+import com.findit.service.NotificationService;
 import com.findit.service.UserService;
+import com.findit.ui.AdminMenu;
 import com.findit.ui.ClaimMenu;
 import com.findit.ui.ItemMenu;
+import com.findit.ui.NotificationMenu;
 import java.util.Optional;
 import java.util.Scanner;
 
 public class App {
 
     private static final Scanner scanner = new Scanner(System.in);
+
     private static final UserService userService =
             new UserService(new UserRepository());
+    private static final NotificationService notificationService =
+            new NotificationService(new NotificationRepository());
     private static final ItemService itemService =
-            new ItemService(new ItemRepository<LostItem>(), new ItemRepository<FoundItem>());
+            new ItemService(new ItemRepository<LostItem>(),
+                            new ItemRepository<FoundItem>(), notificationService);
+    private static final ClaimService claimService =
+            new ClaimService(new ClaimRepository(), itemService,
+                             userService, notificationService);
+
     private static final ItemMenu itemMenu = new ItemMenu(scanner, itemService);
-    private static final ClaimMenu claimMenu =
-            new ClaimMenu(scanner, new ClaimService(new ClaimRepository(), itemService));
+    private static final ClaimMenu claimMenu = new ClaimMenu(scanner, claimService);
+    private static final NotificationMenu notificationMenu =
+            new NotificationMenu(notificationService);
+    private static final AdminMenu adminMenu =
+            new AdminMenu(scanner, userService, itemService, claimService);
+
     private static User loggedInUser = null;
 
     public static void main(String[] args) {
@@ -82,20 +98,27 @@ public class App {
         if (result.isPresent()) {
             loggedInUser = result.get();
             System.out.println("Welcome, " + loggedInUser.getName() + "!");
+            long unread = notificationService.countUnread(loggedInUser);
+            if (unread > 0) {
+                System.out.println("You have " + unread + " unread notification(s).");
+            }
         } else {
             System.out.println("Invalid email or password.");
         }
     }
 
     private static void userMenu() {
+        long unread = notificationService.countUnread(loggedInUser);
+
         System.out.println("\n--- Menu (" + loggedInUser.getRole() + ") ---");
         System.out.println("1. View my profile");
         System.out.println("2. Update phone");
         System.out.println("3. Change email");
         System.out.println("4. Lost & Found items");
         System.out.println("5. Claims");
+        System.out.println("6. Notifications (" + unread + " unread)");
         if (loggedInUser.getRole() == Role.ADMIN) {
-            System.out.println("6. View all users (Admin)");
+            System.out.println("7. Admin panel");
         }
         System.out.println("0. Logout");
         System.out.print("Choose: ");
@@ -107,13 +130,8 @@ public class App {
             case "3" -> changeEmail();
             case "4" -> itemMenu.show(loggedInUser);
             case "5" -> claimMenu.show(loggedInUser);
-            case "6" -> {
-                if (loggedInUser.getRole() == Role.ADMIN) {
-                    userService.getAllUsers().forEach(System.out::println);
-                } else {
-                    System.out.println("Access denied.");
-                }
-            }
+            case "6" -> notificationMenu.show(loggedInUser);
+            case "7" -> adminMenu.show(loggedInUser);
             case "0" -> {
                 loggedInUser = null;
                 System.out.println("Logged out.");

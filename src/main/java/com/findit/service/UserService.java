@@ -74,4 +74,9 @@ public class UserService {
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
+    public Optional<User> findById(int id) {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getId() == id)
+                .findFirst();
+    }
 }
