@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public class UserService {
 
+    private static final String ADMIN_EMAIL = "admin@findit.com";
+
     private final UserRepository userRepository;
 
     public UserService(UserRepository userRepository) {
@@ -17,9 +19,10 @@ public class UserService {
     }
 
     private void seedAdmin() {
-        User admin = new User(userRepository.generateId(), "Admin",
-                "admin@findit.com", "admin123", "9000000000", Role.ADMIN);
-        userRepository.save(admin);
+        if (!userRepository.existsByEmail(ADMIN_EMAIL)) {
+            userRepository.save(new User(0, "Admin", ADMIN_EMAIL,
+                    "admin123", "9000000000", Role.ADMIN));
+        }
     }
 
     public User register(String name, String email, String password, String phone) {
@@ -39,10 +42,8 @@ public class UserService {
             throw new IllegalArgumentException("Email already registered.");
         }
 
-        User user = new User(userRepository.generateId(), name.trim(),
-                email.trim().toLowerCase(), password, phone, Role.USER);
-        userRepository.save(user);
-        return user;
+        return userRepository.save(new User(0, name.trim(),
+                email.trim().toLowerCase(), password, phone, Role.USER));
     }
 
     public Optional<User> login(String email, String password) {
@@ -58,6 +59,7 @@ public class UserService {
             throw new IllegalArgumentException("Phone must be exactly 10 digits.");
         }
         user.setPhone(newPhone);
+        userRepository.update(user);
     }
 
     public void changeEmail(User user, String newEmail) {
@@ -69,14 +71,16 @@ public class UserService {
             throw new IllegalArgumentException("Email already used by another account.");
         }
         user.setEmail(newEmail.trim().toLowerCase());
+        userRepository.update(user);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
     public Optional<User> findById(int id) {
         return userRepository.findAll().stream()
                 .filter(u -> u.getId() == id)
                 .findFirst();
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }
