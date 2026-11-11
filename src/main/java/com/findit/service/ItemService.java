@@ -2,6 +2,8 @@ package com.findit.service;
 
 import com.findit.model.*;
 import com.findit.repository.ItemRepository;
+import com.findit.repository.FoundItemRepository;
+import com.findit.repository.LostItemRepository;
 import com.findit.util.Validator;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -31,24 +33,24 @@ public class ItemService {
                                String description, String location,
                                String dateText, String imagePath) {
         validateReport(name, category, location);
-        LostItem item = new LostItem(lostRepo.generateId(), name.trim(), category,
-                clean(description), location.trim(), parseDate(dateText), clean(imagePath),
-                user.getId());
-        lostRepo.save(item);
-        notifyFindersOfMatch(item);
-        return item;
+        LostItem draft = new LostItem(0, name.trim(), category,
+                clean(description), location.trim(), parseDate(dateText),
+                clean(imagePath), user.getId());
+        LostItem saved = lostRepo.save(draft);
+        notifyFindersOfMatch(saved);
+        return saved;
     }
 
     public FoundItem reportFound(User user, String name, Category category,
                                  String description, String location,
                                  String dateText, String imagePath) {
         validateReport(name, category, location);
-        FoundItem item = new FoundItem(foundRepo.generateId(), name.trim(), category,
-                clean(description), location.trim(), parseDate(dateText), clean(imagePath),
-                user.getId());
-        foundRepo.save(item);
-        notifyOwnersOfMatch(item);
-        return item;
+        FoundItem draft = new FoundItem(0, name.trim(), category,
+                clean(description), location.trim(), parseDate(dateText),
+                clean(imagePath), user.getId());
+        FoundItem saved = foundRepo.save(draft);
+        notifyOwnersOfMatch(saved);
+        return saved;
     }
 
     // ---------- Search / browse ----------
@@ -83,14 +85,24 @@ public class ItemService {
         return lostRepo.findAll();
     }
 
+    /** Used by ClaimService: changes a found item's status and saves it. */
+    public void updateFoundStatus(FoundItem item, ItemStatus status) {
+        item.setStatus(status);
+        foundRepo.update(item);
+    }
+
     // ---------- Update / delete ----------
 
     public void updateLost(User user, int id, String name, String location, String description) {
-        applyUpdate(findAuthorized(lostRepo, user, id), name, location, description);
+        LostItem item = findAuthorized(lostRepo, user, id);
+        applyUpdate(item, name, location, description);
+        lostRepo.update(item);
     }
 
     public void updateFound(User user, int id, String name, String location, String description) {
-        applyUpdate(findAuthorized(foundRepo, user, id), name, location, description);
+        FoundItem item = findAuthorized(foundRepo, user, id);
+        applyUpdate(item, name, location, description);
+        foundRepo.update(item);
     }
 
     public void deleteLost(User user, int id) {
@@ -209,4 +221,7 @@ public class ItemService {
     private String clean(String value) {
         return value == null ? "" : value.trim();
     }
-}
+/*
+ * private static final ItemService itemService = new ItemService(new
+ * LostItemRepository(), new FoundItemRepository(), notificationService); }
+ */
