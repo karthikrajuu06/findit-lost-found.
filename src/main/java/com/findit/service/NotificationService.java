@@ -16,7 +16,7 @@ public class NotificationService {
     }
 
     public void notifyUser(int userId, String message) {
-        repo.save(new Notification(repo.generateId(), userId, message));
+        repo.save(new Notification(0, userId, message));
     }
 
     public List<Notification> getMine(User user) {
@@ -32,6 +32,6 @@ public class NotificationService {
     }
 
     public void markAllRead(User user) {
-        repo.findByUser(user.getId()).forEach(Notification::markRead);
+        repo.markAllRead(user.getId());
     }
 }

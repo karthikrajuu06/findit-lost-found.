@@ -11,13 +11,21 @@ public class Claim {
     private ClaimStatus status;
     private final LocalDateTime createdAt;
 
+    /** For a brand-new claim: starts PENDING. */
     public Claim(int id, int foundItemId, int claimantId, String proofDetails) {
+        this(id, foundItemId, claimantId, proofDetails,
+                ClaimStatus.PENDING, LocalDateTime.now());
+    }
+
+    /** For a claim loaded from the database. */
+    public Claim(int id, int foundItemId, int claimantId, String proofDetails,
+                 ClaimStatus status, LocalDateTime createdAt) {
         this.id = id;
         this.foundItemId = foundItemId;
         this.claimantId = claimantId;
         this.proofDetails = proofDetails;
-        this.status = ClaimStatus.PENDING;
-        this.createdAt = LocalDateTime.now();
+        this.status = status;
+        this.createdAt = createdAt;
     }
 
     public int getId() { return id; }

@@ -11,12 +11,19 @@ public class Notification {
     private boolean read;
     private final LocalDateTime createdAt;
 
+    /** For a new notification. */
     public Notification(int id, int userId, String message) {
+        this(id, userId, message, false, LocalDateTime.now());
+    }
+
+    /** For a notification loaded from the database. */
+    public Notification(int id, int userId, String message,
+                        boolean read, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.message = message;
-        this.read = false;
-        this.createdAt = LocalDateTime.now();
+        this.read = read;
+        this.createdAt = createdAt;
     }
 
     public int getId() { return id; }
