@@ -1,11 +1,10 @@
 package com.findit;
 
-import com.findit.model.FoundItem;
-import com.findit.model.LostItem;
 import com.findit.model.Role;
 import com.findit.model.User;
 import com.findit.repository.ClaimRepository;
-import com.findit.repository.ItemRepository;
+import com.findit.repository.FoundItemRepository;
+import com.findit.repository.LostItemRepository;
 import com.findit.repository.NotificationRepository;
 import com.findit.repository.UserRepository;
 import com.findit.service.ClaimService;
@@ -28,8 +27,8 @@ public class App {
     private static final NotificationService notificationService =
             new NotificationService(new NotificationRepository());
     private static final ItemService itemService =
-            new ItemService(new ItemRepository<LostItem>(),
-                            new ItemRepository<FoundItem>(), notificationService);
+            new ItemService(new LostItemRepository(),
+                            new FoundItemRepository(), notificationService);
     private static final ClaimService claimService =
             new ClaimService(new ClaimRepository(), itemService,
                              userService, notificationService);

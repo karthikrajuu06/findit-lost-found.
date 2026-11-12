@@ -2,8 +2,6 @@ package com.findit.service;
 
 import com.findit.model.*;
 import com.findit.repository.ItemRepository;
-import com.findit.repository.FoundItemRepository;
-import com.findit.repository.LostItemRepository;
 import com.findit.util.Validator;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -221,7 +219,4 @@ public class ItemService {
     private String clean(String value) {
         return value == null ? "" : value.trim();
     }
-/*
- * private static final ItemService itemService = new ItemService(new
- * LostItemRepository(), new FoundItemRepository(), notificationService); }
- */
+}
