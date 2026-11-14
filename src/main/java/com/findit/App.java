@@ -23,15 +23,13 @@ public class App {
     private static final Scanner scanner = new Scanner(System.in);
 
     private static final UserService userService =
-            new UserService(new UserRepository());
+             new UserService(new UserRepository());
     private static final NotificationService notificationService =
             new NotificationService(new NotificationRepository());
-    private static final ItemService itemService =
-            new ItemService(new LostItemRepository(),
+    private static final ItemService itemService = new ItemService(new LostItemRepository(),
                             new FoundItemRepository(), notificationService);
-    private static final ClaimService claimService =
-            new ClaimService(new ClaimRepository(), itemService,
-                             userService, notificationService);
+    
+    private static final ClaimService claimService = new ClaimService(new ClaimRepository(), itemService,userService, notificationService);
 
     private static final ItemMenu itemMenu = new ItemMenu(scanner, itemService);
     private static final ClaimMenu claimMenu = new ClaimMenu(scanner, claimService);
